@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
 import { Layout, Card, Avatar, Badge, Button } from '../components';
 import { mockChildren, mockSessions, mockMilestones, moodEmojis, subjectColors } from '../lib/data';
-import { Calendar, BookOpen, Trophy, TrendingUp, Mail, MapPin, ChevronLeft, Edit, Download } from 'lucide-react';
+import { Calendar, BookOpen, Trophy, TrendingUp, Mail, ChevronLeft, Edit, Download } from 'lucide-react';
 import { format, parseISO, subDays } from 'date-fns';
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
 export default function ChildProfilePage() {
   const { id } = useParams();
@@ -69,26 +69,6 @@ export default function ChildProfilePage() {
     }
     return acc;
   }, {} as Record<string, number>);
-
-  const durationByWeek = last30Days.reduce((acc, s) => {
-    if (s.duration_minutes) {
-      const weekStart = format(parseISO(s.session_date), 'w');
-      acc[weekStart] = (acc[weekStart] || 0) + s.duration_minutes;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const trendData = Object.entries(durationByWeek).map(([week, duration]) => ({
-    name: `Week ${week}`,
-    duration,
-  }));
-
-  kpiCards: [
-    { title: 'Attendance', value: `${attendanceRate}%`, icon: Calendar, color: 'bg-emerald-50' },
-    { title: 'Mood Score', value: `${moodScore}%`, icon: TrendingUp, color: 'bg-amber-50' },
-    { title: 'Total Time', value: `${Math.round(totalDuration / 60)}h`, icon: BookOpen, color: 'bg-sky-50' },
-    { title: 'Milestones', value: milestones.length, icon: Trophy, color: 'bg-rose-50' },
-  ];
 
   return (
     <Layout>
@@ -279,7 +259,7 @@ export default function ChildProfilePage() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {subjectData.map((entry, index) => (
+                  {subjectData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

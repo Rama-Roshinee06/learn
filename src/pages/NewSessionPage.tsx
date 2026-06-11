@@ -27,8 +27,6 @@ export default function NewSessionPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const selectedChild = mockChildren.find(c => c.id === selectedChildId);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);

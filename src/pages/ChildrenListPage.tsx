@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Layout, Card, Avatar, Badge, Button } from '../components';
 import { mockChildren, mockSessions, subjectColors } from '../lib/data';
-import { ChevronRight, Calendar, BookOpen, TrendingUp } from 'lucide-react';
-import { parseISO, differenceInDays, subDays, parseISO as parseDate } from 'date-fns';
+import { ChevronRight, Calendar, TrendingUp } from 'lucide-react';
+import { parseISO, differenceInDays } from 'date-fns';
 
 export default function ChildrenListPage() {
   const getChildStats = (childId: string) => {
@@ -16,7 +16,7 @@ export default function ChildrenListPage() {
       ? Math.round((last30Days.filter(s => s.attendance_status === 'present').length / last30Days.length) * 100)
       : 0;
 
-    const subjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))];
+    const subjects = [...new Set(sessions.map(s => s.subject).filter((value): value is string => Boolean(value)))];
     const recentSessions = sessions.slice(0, 8);
 
     return {

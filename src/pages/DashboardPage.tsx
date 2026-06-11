@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout, Card, KPICard, Avatar, Badge, Button } from '../components';
-import { mockChildren, mockSessions, moodEmojis, moodColors, subjectColors } from '../lib/data';
-import { CalendarDays, TrendingUp, Sparkles, CheckCircle2, Plus, Clock, ChevronRight } from 'lucide-react';
+import { mockChildren, mockSessions, moodEmojis, subjectColors } from '../lib/data';
+import { CalendarDays, Sparkles, CheckCircle2, Plus, Clock, ChevronRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import { format, subDays, isSameDay, parseISO } from 'date-fns';
 
 const SELECTED_CHILD_KEY = 'calmlearn_selected_child';
 
 export default function DashboardPage() {
   const [selectedChild, setSelectedChild] = useState(mockChildren[0]);
-  const [sessions, setSessions] = useState(mockSessions);
+  const sessions = mockSessions;
   const [trendRange, setTrendRange] = useState<'7' | '14' | '30'>('7');
 
   useEffect(() => {
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     padding: '12px',
                   }}
-                  formatter={(value: number) => [`${value} minutes`, 'Duration']}
+                  formatter={(value) => [`${value ?? 0} minutes`, 'Duration']}
                   labelStyle={{ color: '#1e293b', fontWeight: 600, marginBottom: 4 }}
                 />
                 <Area

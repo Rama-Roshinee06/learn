@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Layout, Card, KPICard, Badge, Avatar, Button } from '../components';
-import { mockChildren, mockSessions, moodEmojis, subjectColors } from '../lib/data';
+import { Layout, Card, KPICard, Avatar } from '../components';
+import { mockChildren, mockSessions, moodEmojis } from '../lib/data';
 import {
   TrendingUp,
   TrendingDown,
@@ -23,10 +23,9 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
   Line,
 } from 'recharts';
-import { format, parseISO, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, parseISO, subDays, isSameDay } from 'date-fns';
 
 const SELECTED_CHILD_KEY = 'calmlearn_selected_child';
 const COLORS = ['#0d9488', '#0284c7', '#ea580c', '#dc2626', '#7c3aed', '#0891b2', '#6366f1'];
@@ -34,7 +33,7 @@ const COLORS = ['#0d9488', '#0284c7', '#ea580c', '#dc2626', '#7c3aed', '#0891b2'
 export default function AnalyticsPage() {
   const [selectedChild, setSelectedChild] = useState(mockChildren[0]);
   const [dateRange, setDateRange] = useState<'7' | '14' | '30'>('30');
-  const [sessions, setSessions] = useState(mockSessions);
+  const sessions = mockSessions;
 
   useEffect(() => {
     const stored = localStorage.getItem(SELECTED_CHILD_KEY);
@@ -98,8 +97,6 @@ export default function AnalyticsPage() {
     duration,
     sessions: filteredSessions.filter(s => s.subject === name).length,
   }));
-
-  const subjectPieData = subjectTimeData.map(s => ({ name: s.name, value: s.duration }));
 
   // Progress trend
   const progressData = [];
@@ -330,7 +327,7 @@ export default function AnalyticsPage() {
                   width={80}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`${value} minutes`, 'Duration']}
+                  formatter={(value) => [`${value ?? 0} minutes`, 'Duration']}
                   contentStyle={{ borderRadius: '12px' }}
                 />
                 <Bar dataKey="duration" fill="#0d9488" radius={[0, 4, 4, 0]} />
@@ -353,10 +350,10 @@ export default function AnalyticsPage() {
                   outerRadius={65}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ emoji }) => emoji}
+                  label={(entry) => ((entry.payload as { emoji?: string } | undefined)?.emoji) || ''}
                   labelLine={false}
                 >
-                  {moodData.map((entry, index) => (
+                  {moodData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -365,11 +362,11 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            {moodData.map((m, i) => (
-              <div key={m.name} className="flex items-center gap-1.5">
-                <span className="text-sm">{m.emoji}</span>
+            {moodData.map(mood => (
+              <div key={mood.name} className="flex items-center gap-1.5">
+                <span className="text-sm">{mood.emoji}</span>
                 <span className="text-xs text-slate-500">
-                  {m.value}
+                  {mood.value}
                 </span>
               </div>
             ))}
