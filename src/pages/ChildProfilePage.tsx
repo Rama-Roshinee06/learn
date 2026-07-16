@@ -1,13 +1,17 @@
-import { useParams, Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout, Card, Avatar, Badge, Button } from '../components';
-import { mockChildren, mockSessions, mockMilestones, moodEmojis, subjectColors } from '../lib/data';
-import { Calendar, BookOpen, Trophy, TrendingUp, Mail, ChevronLeft, Edit, Download } from 'lucide-react';
+import { mockSessions, mockMilestones, moodEmojis, subjectColors } from '../lib/data';
+import { loadChildren, calculateAge } from '../lib/children';
+import { Calendar, BookOpen, Trophy, TrendingUp, Mail, ChevronLeft, Edit, Download, HeartPulse, Phone, MapPin } from 'lucide-react';
 import { format, parseISO, subDays } from 'date-fns';
 import { ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
 export default function ChildProfilePage() {
   const { id } = useParams();
-  const child = mockChildren.find(c => c.id === id);
+  const navigate = useNavigate();
+  const children = useMemo(() => loadChildren(), [id]);
+  const child = children.find((c) => c.id === id);
 
   if (!child) {
     return (
@@ -22,36 +26,26 @@ export default function ChildProfilePage() {
     );
   }
 
-  const sessions = mockSessions.filter(s => s.child_id === child.id);
-  const milestones = mockMilestones.filter(m => m.child_id === child.id);
+  const sessions = mockSessions.filter((s) => s.child_id === child.id);
+  const milestones = mockMilestones.filter((m) => m.child_id === child.id);
   const recentSessions = sessions.slice(0, 15);
+  const age = calculateAge(child.date_of_birth);
 
-  const parseAge = (dob: string) => {
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  const last30Days = sessions.filter(s => {
+  const last30Days = sessions.filter((s) => {
     const d = parseISO(s.session_date);
     return d >= subDays(new Date(), 30);
   });
 
   const attendanceRate = last30Days.length > 0
-    ? Math.round((last30Days.filter(s => s.attendance_status === 'present').length / last30Days.length) * 100)
+    ? Math.round((last30Days.filter((s) => s.attendance_status === 'present').length / last30Days.length) * 100)
     : 0;
 
-  const positiveMoods = last30Days.filter(s => ['happy', 'excited', 'proud'].includes(s.mood || '')).length;
-  const moodScore = last30Days.filter(s => s.mood).length > 0
-    ? Math.round((positiveMoods / last30Days.filter(s => s.mood).length) * 100)
+  const positiveMoods = last30Days.filter((s) => ['happy', 'excited', 'proud'].includes(s.mood || '')).length;
+  const moodScore = last30Days.filter((s) => s.mood).length > 0
+    ? Math.round((positiveMoods / last30Days.filter((s) => s.mood).length) * 100)
     : 0;
 
-  const totalDuration = last30Days.filter(s => s.duration_minutes).reduce((acc, s) => acc + (s.duration_minutes || 0), 0);
+  const totalDuration = last30Days.filter((s) => s.duration_minutes).reduce((acc, s) => acc + (s.duration_minutes || 0), 0);
 
   const subjectStats = sessions.reduce((acc, s) => {
     if (s.subject) {
@@ -72,7 +66,6 @@ export default function ChildProfilePage() {
 
   return (
     <Layout>
-      {/* Back button */}
       <Link
         to="/children"
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-6"
@@ -81,7 +74,6 @@ export default function ChildProfilePage() {
         Back to Children
       </Link>
 
-      {/* Profile Header */}
       <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 sm:p-8 mb-8 border border-slate-200">
         <div className="flex flex-col md:flex-row md:items-start gap-6">
           <Avatar src={child.avatar_url} name={child.name} size="xl" className="ring-4 ring-white shadow-lg w-24 h-24" />
@@ -89,10 +81,10 @@ export default function ChildProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <div>
                 <h1 className="text-2xl font-semibold text-slate-900">{child.name}</h1>
-                <p className="text-slate-500">{child.grade} • {parseAge(child.date_of_birth || '2017-01-01')} years old</p>
+                <p className="text-slate-500">{child.child_id} • {age !== null ? `${age} years old` : 'Age pending'}</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="secondary" className="gap-2">
+                <Button variant="secondary" className="gap-2" onClick={() => navigate(`/children/${child.id}/edit`)}>
                   <Edit className="w-4 h-4" />
                   Edit Profile
                 </Button>
@@ -103,10 +95,22 @@ export default function ChildProfilePage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-              {child.parent_email && (
+              {child.email && (
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  <span>{child.parent_email}</span>
+                  <span>{child.email}</span>
+                </div>
+              )}
+              {child.phone_number && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  <span>{child.phone_number}</span>
+                </div>
+              )}
+              {child.address && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>{child.address}</span>
                 </div>
               )}
             </div>
@@ -114,7 +118,6 @@ export default function ChildProfilePage() {
         </div>
       </div>
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card padding="md">
           <div className="flex items-center gap-3">
@@ -162,45 +165,69 @@ export default function ChildProfilePage() {
         </Card>
       </div>
 
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr] mb-8">
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <HeartPulse className="w-5 h-5 text-slate-700" />
+            <h3 className="font-semibold text-slate-900">Child Profile Overview</h3>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Autism Level</p>
+              <p className="font-medium text-slate-900">{child.autism_level || 'Pending'}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Status</p>
+              <p className="font-medium text-slate-900">{child.status || 'Active'}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Therapist</p>
+              <p className="font-medium text-slate-900">{child.therapist_name || 'Pending'}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Hospital / Clinic</p>
+              <p className="font-medium text-slate-900">{child.hospital_name || 'Pending'}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Medical Notes</p>
+              <p className="font-medium text-slate-900">{child.medical_notes || 'No notes added yet.'}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="font-semibold text-slate-900 mb-4">Parent & Learning</h3>
+          <div className="space-y-3 text-sm text-slate-600">
+            <div><span className="font-medium text-slate-900">Parent:</span> {child.parent_name || 'Pending'}</div>
+            <div><span className="font-medium text-slate-900">Relationship:</span> {child.relationship || 'Pending'}</div>
+            <div><span className="font-medium text-slate-900">Learning Level:</span> {child.current_learning_level || 'Pending'}</div>
+            <div><span className="font-medium text-slate-900">Preferred Style:</span> {child.preferred_learning_style || 'Pending'}</div>
+            <div><span className="font-medium text-slate-900">Strengths:</span> {child.strengths || 'Pending'}</div>
+            <div><span className="font-medium text-slate-900">Challenges:</span> {child.challenges || 'Pending'}</div>
+          </div>
+        </Card>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        {/* Session History */}
         <Card className="lg:col-span-2">
           <h3 className="font-semibold text-slate-900 mb-4">Session History</h3>
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {recentSessions.map(session => (
-              <div
-                key={session.id}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors"
-              >
+            {recentSessions.map((session) => (
+              <div key={session.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className="text-center w-16">
-                  <p className="text-xs font-medium text-slate-400 uppercase">
-                    {format(parseISO(session.session_date), 'MMM')}
-                  </p>
-                  <p className="text-lg font-semibold text-slate-900">
-                    {format(parseISO(session.session_date), 'd')}
-                  </p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">{format(parseISO(session.session_date), 'MMM')}</p>
+                  <p className="text-lg font-semibold text-slate-900">{format(parseISO(session.session_date), 'd')}</p>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    {session.subject && (
-                      <Badge className={subjectColors[session.subject] || ''} size="sm">
-                        {session.subject}
-                      </Badge>
-                    )}
+                    {session.subject && <Badge className={subjectColors[session.subject] || ''} size="sm">{session.subject}</Badge>}
                     {session.mood && <span className="text-base">{moodEmojis[session.mood]}</span>}
                   </div>
-                  <p className="text-sm text-slate-500 truncate">
-                    {session.activities_completed || 'Session recorded'}
-                  </p>
+                  <p className="text-sm text-slate-500 truncate">{session.activities_completed || 'Session recorded'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-slate-700">
-                    {session.duration_minutes ? `${session.duration_minutes}m` : '-'}
-                  </p>
-                  <Badge
-                    variant={session.attendance_status === 'present' ? 'success' : session.attendance_status === 'late' ? 'warning' : 'danger'}
-                    size="sm"
-                  >
+                  <p className="text-sm font-medium text-slate-700">{session.duration_minutes ? `${session.duration_minutes}m` : '-'}</p>
+                  <Badge variant={session.attendance_status === 'present' ? 'success' : session.attendance_status === 'late' ? 'warning' : 'danger'} size="sm">
                     {session.attendance_status}
                   </Badge>
                 </div>
@@ -209,56 +236,24 @@ export default function ChildProfilePage() {
           </div>
         </Card>
 
-        {/* Milestones */}
         <Card>
-          <h3 className="font-semibold text-slate-900 mb-4">Milestones</h3>
-          {milestones.length > 0 ? (
-            <div className="space-y-3">
-              {milestones.map(milestone => (
-                <div key={milestone.id} className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 text-sm">{milestone.title}</p>
-                      {milestone.description && (
-                        <p className="text-xs text-slate-500 mt-0.5">{milestone.description}</p>
-                      )}
-                      {milestone.achieved_date && (
-                        <p className="text-xs text-emerald-600 mt-1">
-                          {format(parseISO(milestone.achieved_date), 'MMMM d, yyyy')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-400">No milestones yet</p>
-            </div>
-          )}
+          <h3 className="font-semibold text-slate-900 mb-4">Future Sections</h3>
+          <div className="space-y-3 text-sm text-slate-600">
+            <div className="rounded-xl border border-dashed border-slate-200 p-4">Assessment History</div>
+            <div className="rounded-xl border border-dashed border-slate-200 p-4">Learning Progress</div>
+            <div className="rounded-xl border border-dashed border-slate-200 p-4">Attendance</div>
+            <div className="rounded-xl border border-dashed border-slate-200 p-4">Achievements</div>
+          </div>
         </Card>
       </div>
 
-      {/* Subject Breakdown */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <h3 className="font-semibold text-slate-900 mb-4">Subject Distribution</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={subjectData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
+                <Pie data={subjectData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2} dataKey="value">
                   {subjectData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
@@ -266,14 +261,6 @@ export default function ChildProfilePage() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {subjectData.map((s, i) => (
-              <div key={s.name} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-xs text-slate-600">{s.name} ({s.value})</span>
-              </div>
-            ))}
           </div>
         </Card>
 
@@ -284,10 +271,7 @@ export default function ChildProfilePage() {
               <div key={mood} className="flex items-center gap-3">
                 <span className="text-xl">{moodEmojis[mood]}</span>
                 <div className="flex-1 bg-slate-100 rounded-full h-2">
-                  <div
-                    className="h-full bg-slate-900 rounded-full transition-all duration-500"
-                    style={{ width: `${(count / sessions.filter(s => s.mood).length) * 100}%` }}
-                  />
+                  <div className="h-full bg-slate-900 rounded-full transition-all duration-500" style={{ width: `${(count / sessions.filter((s) => s.mood).length) * 100}%` }} />
                 </div>
                 <span className="text-sm text-slate-500 w-12 text-right">{count}</span>
               </div>
